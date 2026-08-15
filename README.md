@@ -2,7 +2,7 @@
 
 `TarkovHealthFxLab` 是一个独立的 Minecraft Forge 1.20.1 双端验收模组。v2 已实现文档第 7 条所需的实验室版本：七部位血量真源、轻/重流血、疼痛、骨折、四类黑肢、修复、镇痛、原版再生解锁、头部伤害转移测试、MobEffect 投影、F8 验收入口，以及可选的视觉、镜头、爆炸、TaCZ 和 LR Tactical 兼容。
 
-它默认不依赖、也不会修改 `E:\Project\TarkovMod`。当前实现用于独立验证规则和表现，不应被理解为已经接管 TarkovMod 的真实受伤管线。详细规格见 [`docs/V2-DOCUMENT-ITEM-7-SPEC.md`](docs/V2-DOCUMENT-ITEM-7-SPEC.md)，构建与验证记录见 [`docs/V2-VERIFICATION.md`](docs/V2-VERIFICATION.md)。
+它默认不依赖。当前实现用于独立验证规则和表现，不应被理解为已经接管 TarkovMod 的真实受伤管线。详细规格见 [`docs/V2-DOCUMENT-ITEM-7-SPEC.md`](docs/V2-DOCUMENT-ITEM-7-SPEC.md)，构建与验证记录见 [`docs/V2-VERIFICATION.md`](docs/V2-VERIFICATION.md)。
 
 ## 发布形态
 
