@@ -1,0 +1,26 @@
+{
+  "health_fx.bleed_pulse": {
+    "subtitle": "subtitles.tarkov_health_fx_lab.bleed_pulse",
+    "sounds": ["tarkov_health_fx_lab:health_fx/bleed_pulse"]
+  },
+  "health_fx.fracture_onset": {
+    "subtitle": "subtitles.tarkov_health_fx_lab.fracture_onset",
+    "sounds": ["tarkov_health_fx_lab:health_fx/fracture_onset"]
+  },
+  "health_fx.fracture_step": {
+    "subtitle": "subtitles.tarkov_health_fx_lab.fracture_step",
+    "sounds": ["tarkov_health_fx_lab:health_fx/fracture_step"]
+  },
+  "health_fx.pain_sting": {
+    "subtitle": "subtitles.tarkov_health_fx_lab.pain_sting",
+    "sounds": ["tarkov_health_fx_lab:health_fx/pain_sting"]
+  },
+  "health_fx.pain_breath": {
+    "subtitle": "subtitles.tarkov_health_fx_lab.pain_breath",
+    "sounds": ["tarkov_health_fx_lab:health_fx/pain_breath"]
+  },
+  "health_fx.relief": {
+    "subtitle": "subtitles.tarkov_health_fx_lab.relief",
+    "sounds": ["tarkov_health_fx_lab:health_fx/relief"]
+  }
+}

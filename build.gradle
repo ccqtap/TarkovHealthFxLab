@@ -1,0 +1,212 @@
+plugins {
+    id 'eclipse'
+    id 'idea'
+    id 'java'
+    id 'net.minecraftforge.gradle' version '[6.0,6.2)'
+}
+
+version = mod_version
+group = mod_group_id
+
+base {
+    archivesName = mod_id
+}
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+
+def withIntegrations = providers.gradleProperty('withIntegrations')
+        .map { it.toBoolean() }
+        .orElse(false)
+
+if (withIntegrations.get()) {
+    // Direct API adapters live outside the default source set so a normal
+    // build never needs, loads, or packages third-party classes/resources.
+    sourceSets.main.java.srcDir('src/integration/java')
+}
+
+minecraft {
+    mappings channel: mapping_channel, version: mapping_version
+    copyIdeResources = true
+
+    runs {
+        configureEach {
+            workingDirectory project.file('run')
+            property 'forge.logging.console.level', 'info'
+            if (withIntegrations.get()) {
+                // External production refmaps contain SRG names. Let Mixin
+                // translate them to the official names used by userdev.
+                property 'mixin.env.remapRefMap', 'true'
+                property 'mixin.env.refMapRemappingFile',
+                        file("${buildDir}/createSrgToMcp/output.srg").absolutePath
+            }
+            mods {
+                "${mod_id}" {
+                    source sourceSets.main
+                }
+            }
+        }
+
+        client {
+            property 'forge.enabledGameTestNamespaces', mod_id
+        }
+    }
+}
+
+repositories {
+    maven { url = 'https://maven.minecraftforge.net/' }
+    maven {
+        name = 'CinemaModMCEF'
+        url = 'https://mcef-download.cinemamod.com/repositories/releases'
+        content { includeGroup 'com.cinemamod' }
+    }
+    flatDir {
+        dirs file('../TarkovMod/build/libs'), file('../TarkovMod')
+    }
+    mavenCentral()
+}
+
+def withTarkov = providers.gradleProperty('withTarkov')
+        .map { it.toBoolean() }
+        .orElse(false)
+
+def integrationModsDirectory = file(
+        providers.gradleProperty('integrationModsDir')
+                .orElse('E:/ALLPCL/pcl/.minecraft/versions/wrn165/mods')
+                .get()
+)
+
+repositories {
+    // Coordinates below point at the installed, unmodified production JARs.
+    // Flat-dir coordinates let ForgeGradle remap them for userdev runs.
+    flatDir { dirs integrationModsDirectory }
+}
+
+def integrationJar = { String pattern, String label ->
+    def matches = fileTree(integrationModsDirectory) {
+        include pattern
+    }.files.sort { left, right -> left.name <=> right.name }
+    if (matches.size() != 1) {
+        throw new GradleException(
+                "withIntegrations requires exactly one ${label} JAR matching '${pattern}' "
+                        + "under ${integrationModsDirectory}; found ${matches.size()}"
+        )
+    }
+    return matches.first()
+}
+
+// Three installed JARs use localized/non-coordinate filenames. Mirror only
+// those files into Gradle's local cache with stable coordinate names so the
+// ForgeGradle deobfuscation transform can process their mixins for userdev.
+def integrationRuntimeFlatDir = file("${projectDir}/.gradle/integration-runtime")
+if (withIntegrations.get()) {
+    integrationRuntimeFlatDir.mkdirs()
+    [
+            [source: integrationJar('*EnhancedVisuals_FORGE_v1.8.2_mc1.20.1.jar', 'EnhancedVisuals 1.8.2'), target: 'enhancedvisuals-1.8.2.jar'],
+            [source: integrationJar('CreativeCore_FORGE_v2.12.35_mc1.20.1.jar', 'CreativeCore 2.12.35'), target: 'creativecore-2.12.35.jar'],
+            [source: integrationJar('*lrtactical-1.20.1-0.4.1.jar', 'LR Tactical 0.4.1'), target: 'lrtactical-0.4.1.jar']
+    ].each { entry ->
+        def target = new File(integrationRuntimeFlatDir, entry.target)
+        if (!target.exists()
+                || target.length() != entry.source.length()
+                || target.lastModified() != entry.source.lastModified()) {
+            java.nio.file.Files.copy(
+                    entry.source.toPath(),
+                    target.toPath(),
+                    java.nio.file.StandardCopyOption.REPLACE_EXISTING,
+                    java.nio.file.StandardCopyOption.COPY_ATTRIBUTES
+            )
+        }
+    }
+}
+
+repositories {
+    flatDir { dirs integrationRuntimeFlatDir }
+}
+
+dependencies {
+    minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
+
+    testImplementation platform('org.junit:junit-bom:5.10.2')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+
+    if (withTarkov.get()) {
+        runtimeOnly fg.deobf('local:tarkovmod:5.0.0')
+        runtimeOnly fg.deobf('local:petiteinventory:1.0.8')
+        runtimeOnly(fg.deobf('com.cinemamod:mcef-neoforge:2.1.6-1.20.1@jar')) {
+            transitive = false
+        }
+    }
+
+    if (withIntegrations.get()) {
+        // Compile-only by design: the installed mods remain the runtime source
+        // of all code, animations, models, textures, and sounds.
+        def taczJar = integrationJar('tacz-1.20.1-1.1.8-hotfix.jar', 'TaCZ 1.1.8')
+        def lrTacticalJar = integrationJar('*lrtactical-1.20.1-0.4.1.jar', 'LR Tactical 0.4.1')
+        compileOnly files(taczJar, lrTacticalJar)
+
+        // Production mod JARs must pass through ForgeGradle's deobfuscation
+        // transform before a userdev client can apply their mixins safely.
+        // runtimeOnly keeps every third-party class/resource outside our JAR.
+        // Resolve each original filename through flatDir so ForgeGradle can
+        // remap both normal bytecode and mixin targets for the dev client.
+        runtimeOnly fg.deobf('local:enhancedvisuals:1.8.2')
+        runtimeOnly fg.deobf('local:creativecore:2.12.35')
+        runtimeOnly fg.deobf('local:cameraoverhaul:1.1-1.20.1')
+        runtimeOnly fg.deobf('local:Explosion-Overhaul:0.2.3.0-forge-')
+        runtimeOnly fg.deobf('local:cloth-config:11.1.136-forge')
+        runtimeOnly fg.deobf('local:geckolib-forge:1.20.1-4.8.3')
+        runtimeOnly fg.deobf('local:tacz:1.20.1-1.1.8-hotfix')
+        runtimeOnly fg.deobf('local:lrtactical:0.4.1')
+    }
+}
+
+tasks.named('processResources', ProcessResources).configure {
+    def replaceProperties = [
+            minecraft_version_range: minecraft_version_range,
+            forge_version_range: forge_version_range,
+            loader_version_range: loader_version_range,
+            mod_id: mod_id,
+            mod_name: mod_name,
+            mod_license: mod_license,
+            mod_version: mod_version,
+            mod_authors: mod_authors,
+            mod_description: mod_description
+    ]
+    inputs.properties replaceProperties
+    filesMatching(['META-INF/mods.toml', 'pack.mcmeta']) {
+        expand replaceProperties
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+tasks.named('test', Test).configure {
+    useJUnitPlatform()
+}
+
+tasks.named('jar', Jar).configure {
+    // Forge requires a Maven-compatible semantic version in mods.toml. Keep
+    // the shorter v2 label only in the human-facing artifact filename.
+    archiveVersion = 'v2'
+    archiveClassifier = withIntegrations.get() ? 'integrated' : 'core'
+    if (!withIntegrations.get()) {
+        // A profile switch without clean must never leak stale integration
+        // bytecode from build/classes into the core artifact.
+        exclude 'com/qq/tarkovhealthfxlab/compat/tacz/TaCZClientCompat.class'
+        exclude 'com/qq/tarkovhealthfxlab/compat/lrtactical/LrTacticalCompat.class'
+    }
+    manifest {
+        attributes([
+                'Specification-Title': mod_id,
+                'Specification-Vendor': mod_authors,
+                'Specification-Version': '1',
+                'Implementation-Title': project.name,
+                'Implementation-Version': mod_version,
+                'Implementation-Vendor': mod_authors,
+                'Implementation-Timestamp': new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
+        ])
+    }
+    finalizedBy 'reobfJar'
+}

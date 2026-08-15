@@ -1,0 +1,14 @@
+{
+  "format": "tarkov-health-fx-presets",
+  "formatVersion": 2,
+  "presets": {
+    "light_bleed": {"part": "left_arm", "bleeding": "light", "fractured": false, "pain": 12, "healthRatio": 0.82},
+    "heavy_bleed": {"part": "stomach", "bleeding": "heavy", "fractured": false, "pain": 42, "healthRatio": 0.55},
+    "fracture_leg": {"part": "left_leg", "bleeding": "none", "fractured": true, "blackened": false, "pain": 48, "healthRatio": 0.70},
+    "blackened_arm": {"part": "left_arm", "bleeding": "none", "fractured": false, "blackened": true, "pain": 75, "partHealth": 0},
+    "blackened_leg": {"part": "right_leg", "bleeding": "none", "fractured": true, "blackened": true, "pain": 85, "partHealth": 0},
+    "pain_high": {"part": "thorax", "bleeding": "none", "fractured": false, "pain": 82, "healthRatio": 0.65},
+    "critical_mixed": {"part": "left_leg", "bleeding": "heavy", "fractured": true, "blackened": true, "pain": 88, "healthRatio": 0.22},
+    "item7_showcase": {"parts": ["left_arm", "right_leg", "stomach"], "bleeding": "mixed", "fractured": true, "blackened": true, "pain": 92, "healthRatio": 0.38}
+  }
+}
